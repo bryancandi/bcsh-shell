@@ -17,35 +17,15 @@ int main(void)
     signal(SIGCHLD, SIG_IGN);
 
     char *line = NULL;
-    size_t buffer_size = 0;
-    ssize_t nread;
+    char **args = NULL;
+    int background = 0;
 
     while (1)
     {
         print_prompt();
 
-        nread = getline(&line, &buffer_size, stdin);
-        if (nread == -1) // Error or EOF
-        {
-            if (feof(stdin))
-            {
-                break; // EOF detected
-            }
-            perror("bcsh: getline failed");
-            break;
-        }
-
-        // Handle comments
-        char *comment_start = strchr(line, '#');
-        if (comment_start)
-        {
-            *comment_start = '\0'; // Truncate line at comment
-        }
-
-        trim(line);
-
-        // Skip empty lines
-        if (strlen(line) == 0)
+        line = read_line();
+        if (line == NULL)
         {
             continue;
         }
@@ -85,6 +65,10 @@ int main(void)
             {
                 free(args);
             }
+            if (line)
+            {
+                free(line);
+            }
             break;
         }
 
@@ -102,6 +86,10 @@ int main(void)
                     {
                         free(args);
                     }
+                    if (line)
+                    {
+                        free(line);
+                    }
                     continue;
                 }
             }
@@ -112,6 +100,10 @@ int main(void)
             if (args)
             {
                 free(args);
+            }
+            if (line)
+            {
+                free(line);
             }
             continue;
         }
@@ -145,11 +137,10 @@ int main(void)
         {
             free(args);
         }
-    }
-
-    if (line) // Final cleanup
-    {
-        free(line);
+        if (line)
+        {
+            free(line);
+        }
     }
 
     return 0;
@@ -165,6 +156,45 @@ void print_prompt()
         cwd = "?";
     }
     printf("%s@bcsh:%s $ ", getenv("USER") ?: "user", cwd);
+}
+
+// Read user input line and handle comments and empty lines
+char *read_line()
+{
+    char *line = NULL;
+    size_t buffer_size = 0;
+    ssize_t nread;
+
+    nread = getline(&line, &buffer_size, stdin);
+    if (nread == -1) // Error or EOF
+    {
+        if (feof(stdin))
+        {
+            free(line);
+            return NULL; // EOF detected
+        }
+        perror("bcsh: getline failed");
+        free(line);
+        return NULL;
+    }
+
+    // Handle comments
+    char *comment_start = strchr(line, '#');
+    if (comment_start)
+    {
+        *comment_start = '\0'; // Truncate line at comment
+    }
+
+    trim(line);
+
+    // Skip empty lines
+    if (strlen(line) == 0)
+    {
+        free(line);
+        return NULL;
+    }
+
+    return line;
 }
 
 // Function to trim leading and trailing whitespace from a string

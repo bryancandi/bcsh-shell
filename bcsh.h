@@ -16,6 +16,7 @@
 
 // Function prototypes
 void print_prompt();
+char *read_line();
 void trim(char *line);
 
 #endif // BCSH_H
