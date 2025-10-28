@@ -31,17 +31,25 @@ int main(void)
         {
             if (feof(stdin))
             {
-                break; // EOF, normal exit
+                break; // EOF detected
             }
-            perror("getline failed"); // Error reading line
+            perror("getline failed");
             break;
+        }
+
+        // Handle comments
+        char *comment_start = strchr(line, '#');
+        if (comment_start)
+        {
+            *comment_start = '\0'; // Truncate line at comment
         }
 
         trim(line);
 
+        // Skip empty lines
         if (strlen(line) == 0)
         {
-            continue; // Skip empty lines
+            continue;
         }
 
         // Tokenize the input line into arguments
@@ -61,6 +69,17 @@ int main(void)
         }
         args[argc] = NULL; // Null-terminate the argument list
 
+        // Background execution check (&)
+        // Check for '&' before NULL terminator (argc - 1)
+        int background = 0;
+        if (argc > 0 && strcmp(args[argc - 1], "&") == 0)
+        {
+            // Set background flag and remove '&' from arguments then decrease argc
+            background = 1;
+            args[argc - 1] = NULL; // '&' is now NULL
+            argc--;
+        }
+
         // Built-in shell exit command
         if (strcmp(args[0], "exit") == 0)
         {
@@ -70,7 +89,7 @@ int main(void)
             }
             break;
         }
-       
+
         // Built-in shell cd command
         if (strcmp(args[0], "cd") == 0)
         {
@@ -109,20 +128,27 @@ int main(void)
         }
         else if (pid > 0)
         {
-            wait(NULL); // Parent process waits for child to finish
+            if (background == 0)
+            {
+                // Foreground execution: wait for the child process to finish
+                wait(NULL);
+            }
+            else
+            {
+                // Background execution: do not wait for the child process
+                printf("bcsh: Background job [%s] [%d] started\n", args[0], pid);
+            }
         }
         else
         {
             perror("fork failed");
         }
-
-        // Free allocated memory for arguments and line and reset pointers to NULL
         if (args)
         {
             free(args);
-            args = NULL;
         }
     }
+
     if (line) // Final cleanup
     {
         free(line);
