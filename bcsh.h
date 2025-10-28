@@ -7,6 +7,7 @@
 #define BCSH_H
 
 #define _GNU_SOURCE // Enables POSIX/GNU extensions like getline()
+#define HOSTNAME_MAX 64
 
 #include <limits.h> // For PATH_MAX
 

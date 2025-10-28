@@ -78,12 +78,14 @@ int main(void)
 void print_prompt()
 {
     char dir[PATH_MAX];
+    char hostname[HOSTNAME_MAX];
+    gethostname(hostname, sizeof(hostname));
     char *cwd = getcwd(dir, sizeof(dir));
     if (!cwd)
     {
         cwd = "?";
     }
-    printf("%s@bcsh:%s $ ", getenv("USER") ?: "user", cwd);
+    printf("bcsh:%s@%s:%s $ ", getenv("USER") ?: "user", hostname, cwd);
 }
 
 // Read user input line and handle comments and empty lines
