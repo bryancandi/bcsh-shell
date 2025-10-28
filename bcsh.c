@@ -2,24 +2,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_LENGTH 1024
-#define MAX_ARGS_LENGTH 1024
-#define WORKING_DIR_LENGTH 1024
+// Define PATH_MAX if not defined in limits.h
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 void trim(char *line);
 
 int main(void)
 {
-    char line[MAX_LENGTH];
-    char dir[WORKING_DIR_LENGTH];
+    char dir[PATH_MAX];
+    char *line = NULL;
+    size_t buffer_size = 0;
+    ssize_t nread;
 
     while (1) {
-        printf("bcsh:%s $ ", getcwd(dir, sizeof(dir)));
-        if (!fgets(line, MAX_LENGTH, stdin))
+        char *cwd = getcwd(dir, sizeof(dir));
+        if (!cwd)
         {
+            cwd = "?";
+        }
+        printf("bcsh:%s $ ", cwd);
+        nread = getline(&line, &buffer_size, stdin);
+        if (nread == -1) // Error or EOF
+        {
+            if (feof(stdin))
+            {
+                break; // EOF, normal exit
+            }
+            perror("getline failed"); // Error reading line
             break;
         }
 
@@ -31,19 +46,21 @@ int main(void)
         }
 
         // Tokenize the input line into arguments
-        char *args[MAX_ARGS_LENGTH];
+        char **args = NULL;
+        int argc = 0;
         char *token = strtok(line, " \t\n"); // Tokenize input line by spaces and tabs
-        int i = 0;
-        while (token != NULL && i < MAX_ARGS_LENGTH - 1) {
-            args[i++] = token; // Store each token in args array
+        while (token != NULL)
+        {
+            args = realloc(args, sizeof(char*) * (argc + 2)); // +1 for token, +1 for NULL terminator
+            if (!args)
+            {
+                perror("realloc failed");
+                exit(EXIT_FAILURE);
+            }
+            args[argc++] = token;
             token = strtok(NULL, " \t\n"); // Continue tokenizing
         }
-        args[i] = NULL; // Null-terminate the argument list
-
-        if (args[0] == NULL)
-        {
-            continue; // No tokens/args found
-        }
+        args[argc] = NULL; // Null-terminate the argument list
 
         // Built-in shell exit command
         if (strcmp(args[0], "exit") == 0)
@@ -80,6 +97,20 @@ int main(void)
         else
         {
             perror("fork failed");
+     
+        }
+
+        // Free allocated memory for arguments and line and reset pointers to NULL
+        if (args)
+        {
+            free(args);
+            args = NULL;
+        }
+        if (line)
+        {
+            free(line);
+            line = NULL;
+            buffer_size = 0; // Reset buffer size for safety with the next getline
         }
     }
 
