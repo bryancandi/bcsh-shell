@@ -22,14 +22,17 @@ int main(void)
 
     while (1)
     {
+        // Display prompt
         print_prompt();
 
+        // Read input line
         line = read_line();
         if (line == NULL)
         {
             continue;
         }
 
+        // Tokenize input line
         args = tokenize_command(line, &background);
         if (args == NULL)
         { 
@@ -37,6 +40,7 @@ int main(void)
             continue;
         }
 
+        // Handle built-in commands
         int builtin_status = handle_builtin_commands(args);
         if (builtin_status == -1)
         {
@@ -53,6 +57,7 @@ int main(void)
             continue;
         }
 
+        // Execute commands
         execute_command(args, background);
 
         // Clean up allocated memory for next iteration
@@ -218,6 +223,7 @@ void execute_command(char **args, int background)
         perror("bcsh: fork failed");
     }
 }
+
 // Function to trim leading and trailing whitespace from a string
 void trim(char *line)
 {
