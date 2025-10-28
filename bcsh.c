@@ -25,7 +25,7 @@ int main(void)
         {
             cwd = "?";
         }
-        printf("bcsh:%s $ ", cwd);
+        printf("%s@bcsh:%s $ ", getenv("USER") ?: "user", cwd);
         nread = getline(&line, &buffer_size, stdin);
         if (nread == -1) // Error or EOF
         {
@@ -33,7 +33,7 @@ int main(void)
             {
                 break; // EOF detected
             }
-            perror("getline failed");
+            perror("bcsh: getline failed");
             break;
         }
 
@@ -61,7 +61,7 @@ int main(void)
             args = realloc(args, sizeof(char*) * (argc + 2)); // +1 for token, +1 for NULL terminator
             if (!args)
             {
-                perror("realloc failed");
+                perror("bcsh: realloc failed");
                 exit(EXIT_FAILURE);
             }
             args[argc++] = token;
@@ -88,7 +88,7 @@ int main(void)
                 target_dir = getenv("HOME");
                 if (target_dir == NULL)
                 {
-                    fprintf(stderr, "cd: HOME environment variable not set\n");
+                    fprintf(stderr, "bcsh: cd: HOME environment variable not set\n");
                     if (args)
                     {
                         free(args);
@@ -98,7 +98,7 @@ int main(void)
             }
             if (chdir(target_dir) != 0)
             {
-                perror("cd failed");
+                perror("bcsh: cd failed");
             }
             if (args)
             {
@@ -112,7 +112,7 @@ int main(void)
         if (pid == 0)
         {
             execvp(args[0], args);
-            perror("execvp failed");
+            perror("bcsh: execvp failed");
             exit(EXIT_FAILURE);
         }
         else if (pid > 0)
@@ -122,7 +122,7 @@ int main(void)
         }
         else
         {
-            perror("fork failed");
+            perror("bcsh: fork failed");
         }
         if (args)
         {
