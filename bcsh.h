@@ -6,6 +6,8 @@
 #ifndef BCSH_H
 #define BCSH_H
 
+#define _GNU_SOURCE // Enables POSIX/GNU extensions like getline()
+
 #include <limits.h> // For PATH_MAX
 
 #ifndef PATH_MAX

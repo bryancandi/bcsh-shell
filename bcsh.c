@@ -18,7 +18,8 @@ int main(void)
     size_t buffer_size = 0;
     ssize_t nread;
 
-    while (1) {
+    while (1)
+    {
         char *cwd = getcwd(dir, sizeof(dir));
         if (!cwd)
         {
@@ -63,6 +64,10 @@ int main(void)
         // Built-in shell exit command
         if (strcmp(args[0], "exit") == 0)
         {
+            if (args)
+            {
+                free(args);
+            }
             break;
         }
        
@@ -76,12 +81,20 @@ int main(void)
                 if (target_dir == NULL)
                 {
                     fprintf(stderr, "cd: HOME environment variable not set\n");
+                    if (args)
+                    {
+                        free(args);
+                    }
                     continue;
                 }
             }
             if (chdir(target_dir) != 0)
             {
                 perror("cd failed");
+            }
+            if (args)
+            {
+                free(args);
             }
             continue;
         }
@@ -101,7 +114,6 @@ int main(void)
         else
         {
             perror("fork failed");
-     
         }
 
         // Free allocated memory for arguments and line and reset pointers to NULL
@@ -110,12 +122,10 @@ int main(void)
             free(args);
             args = NULL;
         }
-        if (line)
-        {
-            free(line);
-            line = NULL;
-            buffer_size = 0; // Reset buffer size for safety with the next getline
-        }
+    }
+    if (line) // Final cleanup
+    {
+        free(line);
     }
 
     return 0;
@@ -143,7 +153,8 @@ void trim(char *line)
     }
 
     int i = 0;
-    while (start_index + i <= end_index) {
+    while (start_index + i <= end_index)
+    {
         line[i] = line[start_index + i];
         i++;
     }
