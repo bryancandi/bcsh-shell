@@ -17,15 +17,37 @@ int main(void)
     signal(SIGCHLD, SIG_IGN);
 
     char *line = NULL;
+    size_t buffer_size = 0;
+    ssize_t nread;
 
     while (1)
     {
         print_prompt();
 
-        line = read_input_line();
-        if (line == NULL)
+        nread = getline(&line, &buffer_size, stdin);
+        if (nread == -1) // Error or EOF
         {
-            continue; // Empty line or EOF, prompt again
+            if (feof(stdin))
+            {
+                break; // EOF detected
+            }
+            perror("bcsh: getline failed");
+            break;
+        }
+
+        // Handle comments
+        char *comment_start = strchr(line, '#');
+        if (comment_start)
+        {
+            *comment_start = '\0'; // Truncate line at comment
+        }
+
+        trim(line);
+
+        // Skip empty lines
+        if (strlen(line) == 0)
+        {
+            continue;
         }
 
         // Tokenize the input line into arguments
@@ -143,46 +165,6 @@ void print_prompt()
         cwd = "?";
     }
     printf("%s@bcsh:%s $ ", getenv("USER") ?: "user", cwd);
-}
-
-// Read a line of input from the user, handle comments and trimming
-char *read_input_line()
-{
-    char *line = NULL;
-    size_t buffer_size = 0;
-    ssize_t nread = getline(&line, &buffer_size, stdin);
-    if (nread == -1)
-    {
-        if (feof(stdin))
-        {
-            free(line);
-            return NULL; // EOF detected
-        }
-        perror("bcsh: getline failed");
-        free(line);
-        exit(EXIT_FAILURE);
-    }
-
-    // Strip comments
-    char *comment_start = strchr(line, '#');
-    if (comment_start)
-    {
-        *comment_start = '\0'; // Truncate line at comment
-    }
-
-    // Trim whitespace
-    trim(line);
-
-    // Skip empty lines
-    if (strlen(line) == 0)
-    {
-        free(line);
-        line = NULL;
-        buffer_size = 0;
-        return NULL;
-    }
-
-    return line;
 }
 
 // Function to trim leading and trailing whitespace from a string
