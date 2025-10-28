@@ -13,6 +13,9 @@
 
 int main(void)
 {
+    // Allow kernel to clean up background processes automatically
+    signal(SIGCHLD, SIG_IGN);
+
     char dir[PATH_MAX];
     char *line = NULL;
     size_t buffer_size = 0;
@@ -69,6 +72,17 @@ int main(void)
         }
         args[argc] = NULL; // Null-terminate the argument list
 
+        // Background execution check (&)
+        // Check for '&' before NULL terminator (argc - 1)
+        int background = 0;
+        if (argc > 0 && strcmp(args[argc - 1], "&") == 0)
+        {
+            // Set background flag and remove '&' from arguments then decrease argc
+            background = 1;
+            args[argc - 1] = NULL; // '&' is now NULL
+            argc--;
+        }
+
         // Built-in shell exit command
         if (strcmp(args[0], "exit") == 0)
         {
@@ -117,8 +131,16 @@ int main(void)
         }
         else if (pid > 0)
         {
-            // Wait for the child process to finish
-            wait(NULL);
+            if (background == 0)
+            {
+                // Foreground execution: wait for the child process to finish
+                wait(NULL);
+            }
+            else
+            {
+                // Background execution: do not wait for the child process
+                printf("bcsh: Background job [%s] pid [%d] started\n", args[0], pid);
+            }
         }
         else
         {
