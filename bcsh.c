@@ -37,81 +37,25 @@ int main(void)
             continue;
         }
 
-        // Built-in shell exit command
-        if (strcmp(args[0], "exit") == 0)
+        int builtin_status = handle_builtin_commands(args);
+        if (builtin_status == -1)
         {
-            if (args)
-            {
-                free(args);
-            }
-            if (line)
-            {
-                free(line);
-            }
+            // Exit command
+            free(args);
+            free(line);
             break;
         }
-
-        // Built-in shell cd command
-        if (strcmp(args[0], "cd") == 0)
+        else if (builtin_status == 0)
         {
-            char *target_dir = args[1];
-            if (target_dir == NULL)
-            {
-                target_dir = getenv("HOME");
-                if (target_dir == NULL)
-                {
-                    fprintf(stderr, "bcsh: cd: HOME environment variable not set\n");
-                    if (args)
-                    {
-                        free(args);
-                    }
-                    if (line)
-                    {
-                        free(line);
-                    }
-                    continue;
-                }
-            }
-            if (chdir(target_dir) != 0)
-            {
-                perror("bcsh: cd failed");
-            }
-            if (args)
-            {
-                free(args);
-            }
-            if (line)
-            {
-                free(line);
-            }
+            // Built-in command executed
+            free(args);
+            free(line);
             continue;
         }
 
-        // Fork a child process to execute the command
-        pid_t pid = fork();
-        if (pid == 0)
-        {
-            execvp(args[0], args);
-            perror("bcsh: execvp failed");
-            exit(EXIT_FAILURE);
-        }
-        else if (pid > 0)
-        {
-            if (background == 0)
-            {
-                // Foreground execution: wait for the child process to finish
-                wait(NULL);
-            }
-            else
-            {
-                // Background execution: do not wait for the child process
-                printf("bcsh: Background job [%s] pid [%d] started\n", args[0], pid);
-            }
-        }
-        else
-        {
-            perror("bcsh: fork failed");
-        }
+        execute_command(args, background);
+
+        // Clean up allocated memory for next iteration
         if (args)
         {
             free(args);
@@ -217,6 +161,63 @@ char **tokenize_command(char *line, int *background)
     return args;
 }
 
+// Handle built-in commands like 'cd' and 'exit'
+int handle_builtin_commands(char **args)
+{
+    if (strcmp(args[0], "exit") == 0)
+    {
+        return -1; // Signal to exit shell
+    }
+    else if (strcmp(args[0], "cd") == 0)
+    {
+        char *target_dir = args[1];
+        if (target_dir == NULL)
+        {
+            target_dir = getenv("HOME");
+            if (target_dir == NULL)
+            {
+                fprintf(stderr, "bcsh: cd: HOME environment variable not set\n");
+                return 0;
+            }
+        }
+        if (chdir(target_dir) != 0)
+        {
+            perror("bcsh: cd failed");
+        }
+        return 0;
+    }
+
+    return 1; // Not a built-in command
+}
+
+// Execute commands
+void execute_command(char **args, int background)
+{
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execvp(args[0], args);
+        perror("bcsh: execvp failed");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid > 0)
+    {
+        if (background == 0)
+        {
+            // Foreground execution: wait for the child process to finish
+            wait(NULL);
+        }
+        else
+        {
+            // Background execution: do not wait for the child process
+            printf("bcsh: Background job [%s] pid [%d] started\n", args[0], pid);
+        }
+    }
+    else
+    {
+        perror("bcsh: fork failed");
+    }
+}
 // Function to trim leading and trailing whitespace from a string
 void trim(char *line)
 {

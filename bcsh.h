@@ -18,6 +18,8 @@
 void print_prompt();
 char *read_line();
 char **tokenize_command(char *line, int *background);
+int handle_builtin_commands(char **args);
+void execute_command(char **args, int background);
 void trim(char *line);
 
 #endif // BCSH_H
