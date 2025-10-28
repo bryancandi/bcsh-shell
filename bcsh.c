@@ -30,32 +30,11 @@ int main(void)
             continue;
         }
 
-        // Tokenize the input line into arguments
-        char **args = NULL;
-        int argc = 0;
-        char *token = strtok(line, " \t\n"); // Tokenize input line by spaces and tabs
-        while (token != NULL)
-        {
-            args = realloc(args, sizeof(char*) * (argc + 2)); // +1 for token, +1 for NULL terminator
-            if (!args)
-            {
-                perror("bcsh: realloc failed");
-                exit(EXIT_FAILURE);
-            }
-            args[argc++] = token;
-            token = strtok(NULL, " \t\n"); // Continue tokenizing
-        }
-        args[argc] = NULL; // Null-terminate the argument list
-
-        // Background execution check (&)
-        // Check for '&' before NULL terminator (argc - 1)
-        int background = 0;
-        if (argc > 0 && strcmp(args[argc - 1], "&") == 0)
-        {
-            // Set background flag and remove '&' from arguments then decrease argc
-            background = 1;
-            args[argc - 1] = NULL; // '&' is now NULL
-            argc--;
+        args = tokenize_command(line, &background);
+        if (args == NULL)
+        { 
+            free(line);
+            continue;
         }
 
         // Built-in shell exit command
@@ -195,6 +174,47 @@ char *read_line()
     }
 
     return line;
+}
+
+// Tokenize the command line into arguments
+char **tokenize_command(char *line, int *background)
+{
+    char **args = NULL;
+    int argc = 0;
+    char *token = strtok(line, " \t\n"); // Tokenize input line by spaces and tabs
+
+    *background = 0; // Initialize background flag using pointer
+
+    while (token != NULL)
+    {
+        args = realloc(args, sizeof(char*) * (argc + 2)); // +1 for token, +1 for NULL terminator
+        if (!args)
+        {
+            perror("bcsh: realloc failed");
+            exit(EXIT_FAILURE);
+        }
+        args[argc++] = token;
+        token = strtok(NULL, " \t\n"); // Continue tokenizing
+    }
+
+    if (argc == 0)
+    {
+        free(args);
+        return NULL; // No tokens found
+    }
+
+    args[argc] = NULL; // Null-terminate the argument list
+
+    // Background execution check (&)
+    // Check for '&' before NULL terminator (argc - 1)
+    if (argc > 0 && strcmp(args[argc - 1], "&") == 0)
+    {
+        // Set background flag and remove '&' from arguments then decrease argc
+        *background = 1; // Set background execution flag using pointer
+        args[argc - 1] = NULL; // '&' is now NULL
+    }
+
+    return args;
 }
 
 // Function to trim leading and trailing whitespace from a string
