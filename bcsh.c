@@ -68,14 +68,20 @@ int main(void)
             break;
         }
        
-        // Built in shell cd command
+        // Built-in shell cd command
         if (strcmp(args[0], "cd") == 0)
         {
-            if (args[1] == NULL)
+            char *target_dir = args[1];
+            if (target_dir == NULL)
             {
-                fprintf(stderr, "cd: expected argument\n");
+                target_dir = getenv("HOME");
+                if (target_dir == NULL)
+                {
+                    fprintf(stderr, "cd: HOME environment variable not set\n");
+                    continue;
+                }
             }
-            else if (chdir(args[1]) != 0)
+            if (chdir(target_dir) != 0)
             {
                 perror("cd failed");
             }
