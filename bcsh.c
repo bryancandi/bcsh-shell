@@ -1,17 +1,15 @@
+/*
+ * bcsh.c - A simple Unix-like command-line shell implementation in C
+ * Copyright (C) 2025 Bryan Candiliere
+ */
+
+#include "bcsh.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-// Define PATH_MAX if not defined in limits.h
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
-void trim(char *line);
 
 int main(void)
 {
