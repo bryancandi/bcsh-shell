@@ -1,5 +1,5 @@
 /*
- * bcsh.c - A simple Unix-like command-line shell implementation in C
+ * bcsh.c - A simple Unix-like command-line shell implementation in C.
  * Copyright (C) 2025 Bryan Candiliere
  */
 
@@ -79,13 +79,30 @@ void print_prompt()
 {
     char dir[PATH_MAX];
     char hostname[HOSTNAME_MAX];
-    gethostname(hostname, sizeof(hostname));
     char *cwd = getcwd(dir, sizeof(dir));
+    char *username = getenv("USER");
+    char *home = getenv("HOME");
+
+    gethostname(hostname, sizeof(hostname));
+    hostname[sizeof(hostname) - 1] = '\0';
+
+    if (!username || !*username)
+    {
+        username = "user";
+    }
     if (!cwd)
     {
         cwd = "?";
     }
-    printf("bcsh:%s@%s:%s $ ", getenv("USER") ?: "user", hostname, cwd);
+    if (home && strncmp(cwd, home, strlen(home)) == 0 &&
+        (cwd[strlen(home)] == '/' || cwd[strlen(home)] == '\0'))
+    {
+        printf("bcsh:%s@%s:~%s$ ", username, hostname, cwd + strlen(home));
+    }
+    else
+    {
+        printf("bcsh:%s@%s:%s$ ", username, hostname, cwd);
+    }
 }
 
 // Read user input line and handle comments and empty lines
